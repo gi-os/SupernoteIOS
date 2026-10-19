@@ -8,8 +8,11 @@ A Supernote client for iPhone and iPad that **syncs as if it were a Supernote de
 | Two-way sync: list / download / upload / delete, sync lock, conflict copies | ✅ tested against [allenporter/supernote](https://github.com/allenporter/supernote) |
 | `.note` rendering (Nomad / A6X2, Manta, A5X, A6X, landscape, layers) | ✅ pixel-identical to supernotelib |
 | PDF / EPUB / images | ✅ PDFKit / QuickLook |
-| Pen (Apple Pencil, PencilKit layer per page) | 🧪 beta, strokes stay on-device |
-| Pen write-back into `.note` (syncs to the Nomad) | ⏳ next |
+| **Editing** with Apple Pencil, written into the `.note` (strokes + bitmap), syncs back to the Nomad | 🧪 beta (validated with supernotelib and allenporter's parser; on-device check pending) |
+| Nomad UI: fixed toolbar, page-number bar, sidebar gestures, e-ink panels | ✅ |
+| Tools: needle-point / ink pen / marker, 4 grays, stroke eraser, region eraser, erase all, lasso move/delete, 20-step undo/redo | ✅ |
+| New notes (blank / 5 mm dots), add page | ✅ |
+| Landscape pages, extra layers, headings/keywords editing, text boxes | view-only |
 | Background sync | ⏳ |
 
 ## Layout
@@ -53,12 +56,29 @@ export SN_SERVER=http://127.0.0.1:8080 SN_ACCOUNT=you@example.com SN_PASSWORD=�
 .build/debug/snsync sync ./mirror
 ```
 
-## Pen roadmap
+## How editing works
 
-1. ✅ PencilKit canvas per page, stored in Supernote pixel space (1404×1872 on Nomad), outside the sync mirror.
-2. Convert `PKStroke` points and pressure into Supernote strokes, rasterize them into MAINLAYER (RATTA_RLE encoder) and append TOTALPATH.
-3. Re-write the `.note` file (new blocks + footer), then let `SyncEngine` upload it so the Nomad picks up the edit.
-   Reference: allenporter/supernote's experimental `reconstruct` / `merge` commands.
+A Nomad page stores the same ink in two places:
+
+- **TOTALPATH**: vector strokes. Each one has its points, pressure, pen, color and width, plus the outline contours the device rasterizes.
+- **MAINLAYER**: the RATTA_RLE bitmap the screen actually shows.
+
+`PageEditor` keeps both in sync:
+
+- **New strokes** become TOTALPATH objects. Every field we don't model (timing, trailer) is cloned from a real stroke in the same file, or from a bundled Nomad template. The new stroke is then painted onto the existing bitmap, so the original ink stays byte-identical.
+- **Erase, lasso move and undo** rebuild the bitmap from every stroke's contours. That matches the device's own rendering at about 96% IoU.
+- **`NoteWriter`** writes *append-only*: the original bytes stay put, and the new bitmap, TOTALPATH, layer and page metadata, and footer are appended. The result is re-parsed before it touches disk.
+- **Backups:** the pre-edit version of each note goes to `Application Support/Backups`.
+
+### Verify on your Nomad (before trusting it with real notes)
+
+```sh
+swift build
+.build/debug/snsync new  test.note dots 2              # fresh 2-page note
+.build/debug/snsync scribble test.note test-edited.note # adds 3 test strokes
+```
+
+Copy `test-edited.note` to the Nomad's `Note/` folder (USB or sync) and open it. The three waves should appear, and you should be able to erase and lasso them. Then draw one stroke with each pen on the Nomad, sync, and run `snsync strokes <file>` to confirm the pen-type codes (`PenType` in `TotalPath.swift`).
 
 ## Credits
 

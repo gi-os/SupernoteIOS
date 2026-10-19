@@ -20,7 +20,10 @@ jobs:
       - run: swift test
       - name: Build iOS app (simulator, unsigned)
         run: |
+          set -o pipefail
           xcodebuild -project SupernoteIOS.xcodeproj -scheme SupernoteIOS \
             -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build | tail -50
-          exit ${PIPESTATUS[0]}
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && status=0 || status=$?
+          grep -E "(error|warning): " build.log | grep -v "/SourcePackages/" | sort -u | head -80 || true
+          tail -15 build.log
+          exit $status
