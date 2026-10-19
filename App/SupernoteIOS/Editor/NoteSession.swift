@@ -54,9 +54,10 @@ final class NoteSession {
 
     init(url: URL) throws {
         self.url = url
-        note = try NoteFile(contentsOf: url)
-        base = note
-        if let last = Int(note.header["FINALOPERATION_PAGE"] ?? ""), last >= 1, last <= note.pages.count {
+        let file = try NoteFile(contentsOf: url)
+        note = file
+        base = file
+        if let last = Int(file.header["FINALOPERATION_PAGE"] ?? ""), last >= 1, last <= file.pages.count {
             pageIndex = last - 1
         }
         loadPage()
