@@ -1,0 +1,42 @@
+# XcodeGen spec — run `xcodegen` on a Mac, then open SupernoteIOS.xcodeproj.
+name: SupernoteIOS
+options:
+  bundleIdPrefix: com.gios
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  SupernoteKit:
+    path: .
+targets:
+  SupernoteIOS:
+    type: application
+    platform: iOS
+    sources: [App/SupernoteIOS]
+    dependencies:
+      - package: SupernoteKit
+        product: NoteKit
+      - package: SupernoteKit
+        product: SyncKit
+    info:
+      path: App/SupernoteIOS/Info.plist
+      properties:
+        CFBundleDisplayName: Supernote
+        UILaunchScreen: {}
+        UIFileSharingEnabled: true               # mirror folder visible in Files.app
+        LSSupportsOpeningDocumentsInPlace: true
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true          # Private Cloud on your LAN over plain HTTP
+          NSAllowsArbitraryLoads: true           # …or over Tailscale / a raw IP
+        NSLocalNetworkUsageDescription: Connect to your Supernote Private Cloud on the local network.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gios.supernoteios
+        TARGETED_DEVICE_FAMILY: "1,2"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.10"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""                     # set your team ID
