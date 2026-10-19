@@ -2,13 +2,12 @@ import PDFKit
 import QuickLook
 import SwiftUI
 
-/// Routes a file to the right viewer.
+/// Viewer for non-note files (notes open in `NoteEditorView`).
 struct DocumentView: View {
     let url: URL
 
     var body: some View {
         switch url.pathExtension.lowercased() {
-        case "note": NoteView(url: url)
         case "pdf": PDFViewer(url: url).ignoresSafeArea(edges: .bottom).navigationTitle(url.lastPathComponent)
         default: QuickLookViewer(url: url).navigationTitle(url.lastPathComponent)
         }

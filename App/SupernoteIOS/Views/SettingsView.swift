@@ -22,10 +22,10 @@ struct SettingsView: View {
                     }
                 }
                 Section {
-                    Toggle("Pen (beta)", isOn: $model.penEnabled)
                     Toggle("Apple Pencil only", isOn: $model.pencilOnly)
-                } header: { Text("Pen") } footer: {
-                    Text("Draw on any note page. Strokes are saved on this device for now — they sync back to your Nomad once .note write-back ships.")
+                    Toggle("Left-handed mode", isOn: $model.leftHanded)
+                } header: { Text("Writing") } footer: {
+                    Text("Edits are written into the .note file and sync to your Nomad. The previous five versions of each note are kept in Backups.")
                 }
                 Section {
                     LabeledContent("Device ID", value: model.identity.equipmentNo)

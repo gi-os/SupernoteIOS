@@ -119,3 +119,36 @@ final class EditingTests: XCTestCase {
         XCTAssertEqual(TotalPath(data: try NoteFile(data: data).pages[0].totalPath, pageWidth: 1404, pageHeight: 1872).strokes.count, 57 - sel.count)
     }
 }
+
+final class FactoryTests: XCTestCase {
+    func testBlankNoteParsesAndEdits() throws {
+        for t in NoteFactory.Template.allCases {
+            let data = NoteFactory.blankNote(template: t)
+            let note = try NoteFile(data: data, strict: true)
+            XCTAssertEqual(note.equipment, "N6")
+            XCTAssertEqual(note.pages.count, 1)
+            let img = try NoteRenderer.render(note, page: 0)
+            XCTAssertEqual(img.width, 1404)
+            let page = try PageEditor(note: note, index: 0)
+            page.addStroke(points: [PagePoint(x: 100, y: 100), PagePoint(x: 400, y: 120)], pressures: [1500, 1500],
+                           pen: .inkPen, color: .black, widthMM: 0.5)
+            let edited = try NoteFile(data: NoteWriter.write(note, edits: [0: page.makeEdit()]))
+            XCTAssertEqual(TotalPath(data: edited.pages[0].totalPath, pageWidth: 1404, pageHeight: 1872).strokes.count, 1)
+        }
+    }
+
+    func testAppendPages() throws {
+        let note = try NoteFile(data: NoteFactory.blankNote(template: .dots))
+        let page = try PageEditor(note: note, index: 0)
+        page.addStroke(points: [PagePoint(x: 10, y: 10), PagePoint(x: 50, y: 50)], pressures: [900, 900],
+                       pen: .needlePoint, color: .black, widthMM: 0.3)
+        let data = try NoteWriter.appendPages(note, count: 2, edits: [0: page.makeEdit()])
+        let n = try NoteFile(data: data)
+        XCTAssertEqual(n.pages.count, 3)
+        XCTAssertEqual(n.pages.map(\.footerKey), ["PAGE1", "PAGE2", "PAGE3"])
+        XCTAssertEqual(n.pages[2].style, "style_5mm_dots")
+        XCTAssertNotEqual(n.pages[1].pageID, n.pages[2].pageID)
+        XCTAssertEqual(TotalPath(data: n.pages[0].totalPath, pageWidth: 1404, pageHeight: 1872).strokes.count, 1)
+        _ = try NoteRenderer.render(n, page: 2)
+    }
+}

@@ -8,6 +8,7 @@ import SyncKit
 //   snsync render <file.note> <out-dir>          # one PGM per page
 //   snsync strokes <file.note> [page]            # pen type / color / width per stroke
 //   snsync scribble <in.note> <out.note> [page]   # write-back test: draws a test stroke
+//   snsync new <out.note> [blank|dots] [pages]   # device-style new note
 //   snsync ls                                     # needs SN_SERVER / SN_ACCOUNT / SN_PASSWORD
 //   snsync sync   <mirror-dir>
 //
@@ -94,6 +95,16 @@ do {
         try data.write(to: URL(fileURLWithPath: args[2]))
         print("wrote \(args[2]) (+\(data.count - note.raw.count) bytes, \(editor.strokes.count) strokes on page \(pageIndex + 1))")
 
+    case "new":
+        guard args.count >= 2 else { fail("usage: snsync new <out.note> [blank|dots] [pages]") }
+        let t: NoteFactory.Template = args.count > 2 && args[2] == "dots" ? .dots : .blank
+        var data = NoteFactory.blankNote(template: t)
+        if args.count > 3, let n = Int(args[3]), n > 1 {
+            data = try NoteWriter.appendPages(try NoteFile(data: data), count: n - 1)
+        }
+        try data.write(to: URL(fileURLWithPath: args[1]))
+        print("wrote \(args[1])")
+
     case "ls":
         let client = try await connect()
         for e in try await client.list() {
@@ -109,7 +120,7 @@ do {
         report.conflicts.forEach { print("  conflict: \($0)") }
 
     default:
-        fail("commands: info | render | strokes | scribble | ls | sync")
+        fail("commands: info | render | strokes | scribble | new | ls | sync")
     }
 } catch {
     fail("\(error)")

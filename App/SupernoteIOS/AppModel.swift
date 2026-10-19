@@ -14,9 +14,9 @@ final class AppModel {
     var account: String = UserDefaults.standard.string(forKey: "account") ?? "" {
         didSet { UserDefaults.standard.set(account, forKey: "account") }
     }
-    /// Pen (beta): PencilKit layer over pages. Strokes stay on-device until `.note` write-back lands.
-    var penEnabled: Bool = UserDefaults.standard.bool(forKey: "penEnabled") {
-        didSet { UserDefaults.standard.set(penEnabled, forKey: "penEnabled") }
+    /// Mirrors the Nomad's handedness setting: moves toolbar + undo sidebar to the right.
+    var leftHanded: Bool = UserDefaults.standard.bool(forKey: "leftHanded") {
+        didSet { UserDefaults.standard.set(leftHanded, forKey: "leftHanded") }
     }
     /// iPad: Apple Pencil only (fingers scroll). iPhone: fingers draw.
     var pencilOnly: Bool = UserDefaults.standard.object(forKey: "pencilOnly") as? Bool
