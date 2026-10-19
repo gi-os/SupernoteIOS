@@ -40,15 +40,23 @@ public enum RattaRLE {
     ///   - allBlank: hint for the blank "style_white" background layer.
     ///   - x2: use the X2-series (Nomad / Manta) palette.
     public static func decode(_ data: Data, width: Int, height: Int, allBlank: Bool = false, x2: Bool) throws -> [UInt8] {
-        let expected = width * height
         let map = colormap(x2: x2)
+        var lut = [UInt8](repeating: Gray.transparent, count: 256)
+        for v in 0 ..< 256 {
+            // X2: unknown codes are literal gray values; X: fall back to transparent.
+            lut[v] = map[UInt8(v)] ?? (x2 ? UInt8(v) : Gray.transparent)
+        }
+        return try decodeCodes(data, width: width, height: height, allBlank: allBlank).map { lut[Int($0)] }
+    }
+
+    /// Raw RLE color codes (0x62 = transparent) — the editable form of a layer.
+    public static func decodeCodes(_ data: Data, width: Int, height: Int, allBlank: Bool = false) throws -> [UInt8] {
+        let expected = width * height
         var out = [UInt8]()
         out.reserveCapacity(expected)
 
         func emit(_ code: UInt8, _ length: Int) {
-            // X2: unknown codes are literal gray values; X: fall back to transparent.
-            let c = map[code] ?? (x2 ? code : Gray.transparent)
-            out.append(contentsOf: repeatElement(c, count: length))
+            out.append(contentsOf: repeatElement(code, count: length))
         }
 
         var holder: (code: UInt8, length: UInt8)?
@@ -94,5 +102,35 @@ public enum RattaRLE {
             throw NoteError.decodeLengthMismatch(got: out.count, expected: expected)
         }
         return out
+    }
+
+    public static let transparentCode: UInt8 = 0x62
+
+    /// Inverse of `decodeCodes`. Runs > 128 use the two-pair form (c, 0x80|h)(c, low);
+    /// runs of exactly 0x4000 use the 0xFF marker.
+    public static func encode(_ codes: [UInt8]) -> Data {
+        var out = [UInt8]()
+        out.reserveCapacity(codes.count / 8)
+        var i = 0
+        while i < codes.count {
+            let c = codes[i]
+            var j = i + 1
+            while j < codes.count && codes[j] == c { j += 1 }
+            var n = j - i
+            while n > 0 {
+                if n >= specialLength {
+                    out += [c, specialLengthMarker]; n -= specialLength
+                } else if n > 128 {
+                    let h = (n - 1) >> 7          // 1...127
+                    let low = (n - 1) & 0x7F
+                    out += [c, UInt8(0x80 | (h - 1)), c, UInt8(low)]
+                    n = 0
+                } else {
+                    out += [c, UInt8(n - 1)]; n = 0
+                }
+            }
+            i = j
+        }
+        return Data(out)
     }
 }

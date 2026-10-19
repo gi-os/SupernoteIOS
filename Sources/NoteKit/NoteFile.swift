@@ -59,6 +59,8 @@ public struct NotePage: Sendable {
 
     public var params: NoteParams
     public var layers: [NoteLayer]
+    /// Footer key that points at this page ("PAGE1", "PAGE2", …).
+    public var footerKey: String
     /// Vector stroke data (TOTALPATH). Needed later for `.note` write-back / re-rendering.
     public var totalPath: Data?
     public var recognText: Data?
@@ -82,6 +84,8 @@ public struct NoteFile: Sendable {
     public var header: NoteParams
     public var footer: NoteParams
     public var pages: [NotePage]
+    /// The file bytes this was parsed from (edits are appended to these).
+    public let raw: Data
 
     /// Device that produced the file (e.g. "N5" = Manta). Nomad / A6X2 / A5X share 1404x1872.
     public var equipment: String? { header["APPLY_EQUIPMENT"] }
@@ -95,6 +99,7 @@ public struct NoteFile: Sendable {
 
     public init(data: Data, strict: Bool = false) throws {
         let reader = BlockReader(data: data)
+        raw = data
         guard data.count > 24 else { throw NoteError.tooShort }
         fileType = String(decoding: data.prefix(4), as: UTF8.self)
         let sig = String(decoding: data[data.startIndex + 4 ..< data.startIndex + 24], as: UTF8.self)
@@ -109,7 +114,7 @@ public struct NoteFile: Sendable {
         self.footer = footer
         header = try reader.params(at: footer.int("FILE_FEATURE") ?? 0)
 
-        pages = try footer.keys(withPrefix: "PAGE").compactMap { footer.int($0) }.map { addr in
+        pages = try footer.keys(withPrefix: "PAGE").compactMap { key in footer.int(key).map { (key, $0) } }.map { key, addr in
             let p = try reader.params(at: addr)
             var layers: [NoteLayer] = []
             for key in NotePage.layerKeys {
@@ -131,10 +136,16 @@ public struct NoteFile: Sendable {
             return NotePage(
                 params: p,
                 layers: layers,
+                footerKey: key,
                 totalPath: try p.int("TOTALPATH").flatMap { try reader.block(at: $0) },
                 recognText: try p.int("RECOGNTEXT").flatMap { try reader.block(at: $0) }
             )
         }
+    }
+
+    /// Serializes params back to the `<KEY:VALUE>` block format.
+    static func serialize(_ p: NoteParams) -> Data {
+        Data(p.entries.map { "<\($0.key):\($0.value)>" }.joined().utf8)
     }
 
     public init(contentsOf url: URL) throws {

@@ -6,6 +6,8 @@ import SyncKit
 //
 //   snsync info   <file.note>
 //   snsync render <file.note> <out-dir>          # one PGM per page
+//   snsync strokes <file.note> [page]            # pen type / color / width per stroke
+//   snsync scribble <in.note> <out.note> [page]   # write-back test: draws a test stroke
 //   snsync ls                                     # needs SN_SERVER / SN_ACCOUNT / SN_PASSWORD
 //   snsync sync   <mirror-dir>
 //
@@ -63,6 +65,35 @@ do {
             print(f.path)
         }
 
+    case "strokes":
+        guard args.count >= 2 else { fail("usage: snsync strokes <file.note> [page]") }
+        let note = try NoteFile(contentsOf: URL(fileURLWithPath: args[1]))
+        let pageIndex = (args.count > 2 ? Int(args[2]) ?? 1 : 1) - 1
+        let tp = TotalPath(data: note.pages[pageIndex].totalPath, pageWidth: note.pageSize.width, pageHeight: note.pageSize.height)
+        print("objects=\(tp.objects.count) strokes=\(tp.strokes.count)")
+        for (i, s) in tp.strokes.enumerated() {
+            let b = s.bounds
+            print(String(format: "  #%d pen=%u color=%u width=%u layer=%u points=%d contours=%d bbox=(%.0f,%.0f)-(%.0f,%.0f)",
+                         i, s.penType, s.color, s.width, s.layer, s.points.count, s.contours.count, b.minX, b.minY, b.maxX, b.maxY))
+        }
+
+    case "scribble":
+        guard args.count >= 3 else { fail("usage: snsync scribble <in.note> <out.note> [page]") }
+        let note = try NoteFile(contentsOf: URL(fileURLWithPath: args[1]))
+        let pageIndex = (args.count > 3 ? Int(args[3]) ?? 1 : 1) - 1
+        let editor = try PageEditor(note: note, index: pageIndex)
+        // A wave across the lower part of the page in each pen, so it's easy to spot on the Nomad.
+        for (row, pen) in PenType.allCases.enumerated() {
+            let y = Double(editor.height) - 300 + Double(row) * 70
+            let pts = (0 ..< 120).map { PagePoint(x: 150 + Double($0) * 9, y: y + sin(Double($0) / 6) * 20) }
+            let pressure = (0 ..< 120).map { UInt16(800 + ($0 * 25) % 2500) }
+            editor.addStroke(points: pts, pressures: pressure, pen: pen, color: row == 1 ? .darkGray : .black,
+                             widthMM: pen == .marker ? 1.5 : 0.4)
+        }
+        let data = try NoteWriter.write(note, edits: [pageIndex: editor.makeEdit()])
+        try data.write(to: URL(fileURLWithPath: args[2]))
+        print("wrote \(args[2]) (+\(data.count - note.raw.count) bytes, \(editor.strokes.count) strokes on page \(pageIndex + 1))")
+
     case "ls":
         let client = try await connect()
         for e in try await client.list() {
@@ -78,7 +109,7 @@ do {
         report.conflicts.forEach { print("  conflict: \($0)") }
 
     default:
-        fail("commands: info | render | ls | sync")
+        fail("commands: info | render | strokes | scribble | ls | sync")
     }
 } catch {
     fail("\(error)")
