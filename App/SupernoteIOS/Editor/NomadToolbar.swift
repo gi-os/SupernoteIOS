@@ -13,30 +13,36 @@ struct NomadToolbar: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                button("square.grid.2x2", "Back to Files", action: onBack)
-                sep
-                button("list.bullet.rectangle", "Navigation") { toggle(.navigation) }
-                sep
-                pen(.needlePoint, "pencil.tip", "Needle-point pen")
-                pen(.inkPen, "paintbrush.pointed", "Ink pen")
-                pen(.marker, "highlighter", "Marker")
-                sep
-                tool(.eraser, "eraser", "Eraser", options: .eraser)
-                tool(.regionEraser, "eraser.line.dashed", "Region eraser", options: nil)
-                button("trash", "Erase all") { session.eraseAll() }
-                sep
-                tool(.lasso, "lasso", "Lasso", options: nil)
-                button("square.3.layers.3d", "Layers") { toggle(.layers) }
-                sep
-                button("arrow.uturn.backward", "Undo", enabled: session.canUndo) { session.undo() }
-                button("arrow.uturn.forward", "Redo", enabled: session.canRedo) { session.redo() }
-                sep
-                button("doc.on.doc", "Pages") { toggle(.pages) }
-                button("doc.badge.plus", "Add page") { session.addPage() }
-                button("square.and.arrow.up", "Share") { toggle(.share) }
-                sep
-                button("ellipsis", "More") { toggle(.more) }
-                button("arrow.up.left.and.arrow.down.right", "Full screen", action: onFullScreen)
+                Group {
+                    button("square.grid.2x2", "Back to Files", action: onBack)
+                    sep
+                    button("list.bullet.rectangle", "Navigation") { toggle(.navigation) }
+                    sep
+                    pen(.needlePoint, "pencil.tip", "Needle-point pen")
+                    pen(.inkPen, "paintbrush.pointed", "Ink pen")
+                    pen(.marker, "highlighter", "Marker")
+                    sep
+                }
+                Group {
+                    tool(.eraser, "eraser", "Eraser", options: .eraser)
+                    tool(.regionEraser, "eraser.line.dashed", "Region eraser", options: nil)
+                    button("trash", "Erase all") { session.eraseAll() }
+                    sep
+                    tool(.lasso, "lasso", "Lasso", options: nil)
+                    button("square.3.layers.3d", "Layers") { toggle(.layers) }
+                    sep
+                }
+                Group {
+                    button("arrow.uturn.backward", "Undo", enabled: session.canUndo) { session.undo() }
+                    button("arrow.uturn.forward", "Redo", enabled: session.canRedo) { session.redo() }
+                    sep
+                    button("doc.on.doc", "Pages") { toggle(.pages) }
+                    button("doc.badge.plus", "Add page") { session.addPage() }
+                    button("square.and.arrow.up", "Share") { toggle(.share) }
+                    sep
+                    button("ellipsis", "More") { toggle(.more) }
+                    button("arrow.up.left.and.arrow.down.right", "Full screen", action: onFullScreen)
+                }
             }
             .padding(.vertical, 4)
         }
