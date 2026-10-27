@@ -1,0 +1,42 @@
+name: TestFlight
+
+# Every push to main is a build on the phone. The build number is this workflow's run number, so
+# keep the file name: a renamed workflow counts from 1 again (BUILD_OFFSET in ci/app.env fixes that).
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'fastlane/metadata/**'
+      - 'fastlane/screenshots/**'
+      - 'fastlane/review_notes.txt'
+      - '.github/workflows/check.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/claude.yml'
+      - '.claude/**'
+  # TestFlight builds expire after 90 days: rebuild main on the 1st of every month so a fresh one
+  # is always on the phone. Delete once the app is on the App Store.
+  schedule:
+    - cron: "17 9 1 * *"
+  workflow_dispatch:
+    inputs:
+      force_profiles:
+        description: "Remake provisioning profiles (after adding a capability)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write   # keeps the monthly schedule alive
+
+jobs:
+  ship:
+    uses: gi-os/.github/.github/workflows/ios-testflight.yml@main
+    with:
+      force-profiles: ${{ inputs.force_profiles || false }}
+    secrets: inherit
