@@ -21,6 +21,7 @@ targets:
       path: App/SupernoteIOS/Info.plist
       properties:
         CFBundleDisplayName: Supernote
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)   # CI sets the TestFlight build number
         UILaunchScreen: {}
         UIFileSharingEnabled: true               # mirror folder visible in Files.app
         LSSupportsOpeningDocumentsInPlace: true
