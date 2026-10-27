@@ -1,4 +1,7 @@
-name: CI
+name: Linux package
+
+# NoteKit, SyncKit and the snsync CLI also build and pass their tests on Linux. The app itself is
+# checked by Check (macOS, gi-os kit).
 on:
   push:
   pull_request:
@@ -8,22 +11,5 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:6.1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: swift test
-
-  app-ios:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - run: brew install xcodegen
-      - run: xcodegen
-      - run: swift test
-      - name: Build iOS app (simulator, unsigned)
-        run: |
-          set -o pipefail
-          xcodebuild -project SupernoteIOS.xcodeproj -scheme SupernoteIOS \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 && status=0 || status=$?
-          grep -E "(error|warning): " build.log | grep -v "/SourcePackages/" | sort -u | head -80 || true
-          tail -15 build.log
-          exit $status

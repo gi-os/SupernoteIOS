@@ -1,0 +1,3 @@
+# Lanes (ship, attach, screenshots, release) live in gi-os/.github: ios/fastlane/Fastfile.
+# Per-app values come from ci/app.env. App-specific lanes can go below the import.
+import_from_git(url: "https://github.com/gi-os/.github.git", branch: ENV.fetch("GIOS_KIT_REF", "main"), path: "ios/fastlane/Fastfile")
