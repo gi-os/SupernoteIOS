@@ -1,10 +1,10 @@
 name: TestFlight
 
-# Every push to main is a build on the phone. The build number is this workflow's run number, so
+# Every push to master is a build on the phone. The build number is this workflow's run number, so
 # keep the file name: a renamed workflow counts from 1 again (BUILD_OFFSET in ci/app.env fixes that).
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -15,7 +15,7 @@ on:
       - '.github/workflows/release.yml'
       - '.github/workflows/claude.yml'
       - '.claude/**'
-  # TestFlight builds expire after 90 days: rebuild main on the 1st of every month so a fresh one
+  # TestFlight builds expire after 90 days: rebuild master on the 1st of every month so a fresh one
   # is always on the phone. Delete once the app is on the App Store.
   schedule:
     - cron: "17 9 1 * *"
